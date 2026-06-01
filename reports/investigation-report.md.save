@@ -1,0 +1,126 @@
+# Network Forensics Investigation Report
+
+---
+
+## Case Information
+
+| Field | Details |
+|-------|---------|
+| Case Title | DNS Traffic Analysis — ESPN Web Browsing Investigation |
+| Analyst | Michael Argaw |
+| Date | June 1, 2026 |
+| Environment | Kali Linux |
+| Tools Used | tcpdump, awk, wc |
+| Evidence File | dns.pcap |
+| Source | Chris Sanders Public Packet Repository |
+
+---
+
+## Executive Summary
+
+A packet capture file (dns.pcap) containing 7 DNS packets was analyzed
+using tcpdump on Kali Linux. The investigation identified a single client
+host (172.16.16.154) resolving multiple ESPN and content delivery network
+(CDN) domains through a public DNS server (4.2.2.1). All traffic occurred
+within less than one second, consistent with a user loading the ESPN
+website in a browser. No malicious activity, suspicious domains, or
+anomalous behavior was detected.
+
+---
+
+## Objectives
+
+- Identify all hosts communicating in the capture
+- Determine what protocols and ports were in use
+- Identify what domains were being resolved
+- Assess whether any traffic was suspicious or malicious
+- Document all findings in a structured analyst report
+
+---
+
+## Timeline Reconstruction
+
+15:59:15.346 — Client queried www.espn.com        — resolved to 68.71.212.158
+
+15:59:15.558 — Client queried espn.go.com         — resolved to 199.181.133.61
+
+15:59:15.846 — Client queried cdn.optimizely.com  — resolved via Edgecast CDN
+15:59:15.847 — Client queried a1.espncdn.com      — resolved via Akamai CDN
+15:59:15.898 — Client queried assets.espn.go.com  — resolved via Akamai CDN
+15:59:15.979 — Client queried a2.espncdn.com      — resolved via Akamai CDN
+15:59:15.983 — Client queried a4.espncdn.com      — resolved via Akamai CDN
+
+Total Duration: 637 milliseconds
+
+Conclusion: All 7 DNS queries fired within less than 1 second.
+This is the exact pattern of a web browser loading a single webpage
+and resolving all embedded resource domains simultaneously.
+
+---
+
+## Indicators of Compromise (IOCs)
+
+| Type | Value | Verdict |
+|------|-------|---------|
+| IP | 4.2.2.1 | CLEAN — Level 3 public DNS server |
+| IP | 172.16.16.154 | CLEAN — Internal client host |
+| IP | 68.71.212.158 | CLEAN — ESPN server |
+| IP | 199.181.133.61 | CLEAN — ESPN/Disney server |
+| IP | 72.21.91.8 | CLEAN — Edgecast CDN |
+| IP | 72.246.56.35 | CLEAN — Akamai CDN |
+| IP | 72.246.56.83 | CLEAN — Akamai CDN |
+| IP | 69.31.75.194 | CLEAN — Akamai CDN |
+| IP | 69.31.75.203 | CLEAN — Akamai CDN |
+| Domain | www.espn.com | CLEAN — Legitimate sports website |
+| Domain | cdn.optimizely.com | CLEAN — Known analytics platform |
+
+---
+
+## Conclusions
+
+1. No malicious activity detected. All domains resolved are
+   legitimate and associated with ESPN and its CDN infrastructure.
+
+2. Normal web browsing pattern confirmed. The timing and volume
+   of DNS queries is consistent with a single page load of espn.com.
+
+3. Client behavior is expected. Internal host 172.16.16.154 used
+   a public DNS server (4.2.2.1) which, while functional, represents
+   a configuration worth noting — organizations typically enforce
+   internal DNS servers to maintain visibility and control.
+
+4. CDN usage is legitimate. Multiple Akamai and Edgecast IPs
+   resolving for espncdn.com domains is standard CDN load balancing
+   behavior, not suspicious activity.
+
+---
+
+## Recommendations
+
+| # | Recommendation | Priority |
+|---|----------------|----------|
+| 1 | Enforce internal DNS server usage via DHCP policy to prevent clients using public DNS 4.2.2.1 — improves visibility and control | Medium |
+| 2 | Implement DNS logging at the network level to maintain full query history for future investigations | High |
+| 3 | Monitor for DNS queries to unusual TLDs or high-entropy domain names which may indicate DNS tunneling or C2 activity | High |
+| 4 | Whitelist known CDN IP ranges from Akamai, Cloudflare, Edgecast in threat intelligence platform to reduce false positives | Low |
+
+---
+
+## Skills Demonstrated
+
+| Skill | Tool Used |
+|-------|-----------|
+| Packet capture analysis | tcpdump -r |
+| BPF traffic filtering | tcpdump udp port 53 |
+| Host identification | awk, cut, sort, uniq |
+| Protocol analysis | tcpdump -v |
+| DNS investigation | tcpdump verbose DNS output |
+| Timeline reconstruction | Timestamp analysis |
+| IOC identification | Manual IP and domain review |
+| Analyst report writing | Structured markdown documentation |
+
+---
+
+Report prepared by Michael Argaw — Network Forensics Lab
+Tools: tcpdump on Kali Linux
+Evidence: dns.pcap (Chris Sanders Public Packet Repository)
